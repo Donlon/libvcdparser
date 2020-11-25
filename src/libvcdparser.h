@@ -24,9 +24,6 @@ namespace VcdFormat {
         TimeUnit timeUnit;
     };
 
-}
-
-namespace VcdParser {
     // enum Value {
     //     High, Low,
     //     U, Z
@@ -56,32 +53,40 @@ namespace VcdParser {
     };
 
 
-    struct dataUnit {
-        uint64_t timestamp;
+    struct ValueChange {
+        uint64_t time;
         char data; // 'U', 'Z', '0', '1';
     };
 
-    struct SubVcdSignal {
+    struct SignalRecord {
         unsigned int index = 0;//represent the order in the bus signal
-        std::vector<dataUnit> data;
+        std::vector<ValueChange> values;
     };
 
-    struct VcdSignal {
-        std::string signalName;
-        std::string signalSymbol;
-        std::vector<SubVcdSignal> signals;
+    struct Variable {
+        std::string name;
+        std::string identifier;
+        std::vector<SignalRecord> signals;
     };
 
     struct VcdFile {
-        std::string comment;
         std::string date;
         std::string version;
         VcdFormat::Timescale timescale;
         //can add more filed if necessary
-        // unsigned int signalNums;
-        std::vector<VcdSignal> fileSignals;
-    };
 
+        std::vector<Variable *> variableList;
+        // std::vector<SignalRecord *> signalList;
+
+        ~VcdFile();
+
+        Variable *createVariable(std::string name, std::string identifier);
+
+        // SignalRecord *createSignal();
+    };
+}
+
+namespace VcdParser {
     struct VcdException : public std::exception {
         std::string msg;
         size_t line = 0;
@@ -92,16 +97,24 @@ namespace VcdParser {
         };
     };
 
-    class VcdParse {
-        VcdParser::Tokenizer tokenizer;
-        VcdFile vcdFile;
+    class VcdParser {
+        Tokenizer tokenizer;
+        VcdFormat::VcdFile vcdFile;
 
         uint64_t currentTime = 0;
-        std::map<std::string, VcdSignal *> varIdentifierMap;
+        std::map<std::string, VcdFormat::Variable *> varIdentifierMap;
     public:
-        VcdParse(const char *data, size_t len);
+        VcdParser(const char *data, size_t len);
+
+        explicit VcdParser(const std::string &buffer)
+                : VcdParser(buffer.data(), buffer.size()) {
+        }
 
         void parse();
+
+        VcdFormat::VcdFile &getResult() {
+            return vcdFile;
+        };
 
     private:
         bool parseScalarValueChange(const std::string &definition);

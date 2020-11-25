@@ -9,3 +9,7 @@ add_library(libvcdparser
 
 add_executable(vcdparser-demo
         vcdparser-demo/main.cc)
+
+target_include_directories(vcdparser-demo PRIVATE src/)
+
+target_link_libraries(vcdparser-demo libvcdparser)

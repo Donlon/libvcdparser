@@ -3,6 +3,36 @@
 #include <iostream>
 #include <map>
 
+using namespace VcdFormat;
+
+namespace VcdFormat {
+#if 0
+    VcdFile::~VcdFile() {
+        for (auto &it : signalList) {
+            delete it;
+        }
+    }
+
+    SignalRecord *VcdFile::createSignal() {
+        auto *recode = new SignalRecord();
+        signalList.push_back(recode);
+        return recode;
+    }
+#else
+
+    VcdFile::~VcdFile() = default;
+
+#endif
+
+    Variable *VcdFile::createVariable(std::string name, std::string identifier) {
+        auto *variable = new Variable();
+        variable->name = std::move(name);
+        variable->identifier = std::move(identifier);
+        variableList.push_back(variable);
+        return variable;
+    }
+}
+
 namespace VcdParser {
     enum ParserStates {
         InDefinitionCmds,
@@ -17,6 +47,12 @@ namespace VcdParser {
         InVar,
         InVersion,
 
+        InDumpall,
+        InDumpoff,
+        InDumpon,
+        InDumpvars,
+        InComment2,
+
         InVectorValueChange,
     };
 
@@ -24,7 +60,8 @@ namespace VcdParser {
         WaitVarType,
         WaitSize,
         WaitIdentifierCode,
-        WaitName
+        WaitName,
+        Done
     };
 
     struct Var {
@@ -101,6 +138,7 @@ namespace VcdParser {
     enum class TimescaleParseState {
         WaitTimeNumber,
         WaitTimeUnit,
+        Done
     };
 
     struct Timescale {
@@ -140,16 +178,17 @@ namespace VcdParser {
 
     static inline bool checkVariableValue(char ch) {
         return ch == '0' || ch == '1'
+               || ch == 'u' || ch == 'U'
                || ch == 'x' || ch == 'X'
-               || ch == 'z' || ch == 'Z';
+               || ch == 'z' || ch == 'Z' || ch == '-';
     }
 }
 
-VcdParser::VcdParse::VcdParse(const char *data, size_t len)
+VcdParser::VcdParser::VcdParser(const char *data, size_t len)
         : tokenizer(data, len) {
 }
 
-void VcdParser::VcdParse::parse() {
+void VcdParser::VcdParser::parse() {
     std::string token;
     ParserStates state = InDefinitionCmds;
 
@@ -159,19 +198,23 @@ void VcdParser::VcdParse::parse() {
     // vectorValueChangeType --binary/real
     std::string vectorValueChangeValue;
 
+    token = tokenizer.getNextToken();
     while (!token.empty()) {
-        token = tokenizer.getNextToken();
         switch (state) {
             case InDefinitionCmds:
                 if (token == "$comment") {
                     state = InComment;
                 } else if (token == "$date") {
                     state = InDate;
+                } else if (token == "$enddefinitions") {
+                    state = InEndDefinitions;
                 } else if (token == "$scope") {
                     state = InScope;
                 } else if (token == "$timescale") {
                     state = InTimescale;
                     timescale.state = TimescaleParseState::WaitTimeNumber;
+                } else if (token == "$upscope") {
+                    state = InUpscope;
                 } else if (token == "$var") {
                     state = InVar;
                     var.state = VarParseState::WaitVarType;
@@ -189,6 +232,23 @@ void VcdParser::VcdParse::parse() {
                     state = InDefinitionCmds;
                 } else {
                     // pass
+                }
+                break;
+
+            case InDumpall:// Not implemented
+            case InDumpoff:
+            case InDumpon:
+            case InDumpvars:
+                if (token == "$end") {
+                    state = InSimulationCmds;
+                } else {
+                    // pass
+                }
+                break;
+
+            case InComment2:
+                if (token == "$end") {
+                    state = InSimulationCmds;
                 }
                 break;
 
@@ -215,11 +275,16 @@ void VcdParser::VcdParse::parse() {
                             if (!timescale.setTimeNumber(token)) {
                                 throwException("time_number of variable is invalid");
                             }
+                            timescale.state = TimescaleParseState::WaitTimeUnit;
                             break;
                         case TimescaleParseState::WaitTimeUnit:
                             if (!timescale.setTimeUnit(token)) {
                                 throwException("time_unit of variable is invalid");
                             }
+                            timescale.state = TimescaleParseState::Done;
+                            break;
+                        default:
+                            throwException("unexpected token");
                             break;
                     }
                 }
@@ -228,40 +293,44 @@ void VcdParser::VcdParse::parse() {
             case InVar:
                 if (token == "$end") {
                     state = InDefinitionCmds;
-                    vcdFile.fileSignals.push_back({
-                                                          var.name,  // std::string signalName;
-                                                          var.identifier,  // std::string signalSymbol;
-                                                          {} // std::vector<SubVcdSignal> signals;
-                                                  });
-                    std::vector<SubVcdSignal> &signals = vcdFile.fileSignals.end()->signals;
-                    signals.reserve(var.size);
+                    // new variable
+                    Variable *variable = vcdFile.createVariable(var.name, var.identifier);
+                    std::vector<SignalRecord> &signals = variable->signals;
+                    signals.resize(var.size);
                     int i = 0;
-                    for (auto it : signals) {
+                    for (auto &it : signals) {
                         it.index = i;
                         i++;
                     }
-                    varIdentifierMap[var.identifier] = &*vcdFile.fileSignals.end();
+                    varIdentifierMap[var.identifier] = variable;
                 } else {
                     switch (var.state) {
                         case VarParseState::WaitVarType:
                             if (!var.setVarType(token)) {
                                 throwException("type of variable is invalid");
                             }
+                            var.state = VarParseState::WaitSize;
                             break;
                         case VarParseState::WaitSize:
                             if (!var.setSize(token)) {
                                 throwException("size of variable is invalid");
                             }
+                            var.state = VarParseState::WaitIdentifierCode;
                             break;
                         case VarParseState::WaitIdentifierCode:
                             if (!var.setIdentifier(token)) {
                                 throwException("identifier of variable is invalid");
                             }
+                            var.state = VarParseState::WaitName;
                             break;
                         case VarParseState::WaitName:
                             if (!var.setName(token)) {
                                 throwException("name of variable is invalid");
                             }
+                            var.state = VarParseState::Done;
+                            break;
+                        default:
+                            throwException("unexpected token");
                             break;
                     }
                 }
@@ -293,8 +362,8 @@ void VcdParser::VcdParse::parse() {
                     vectorValueChangeValue = token.substr(1);
                     state = InVectorValueChange;
                 } else if (c == '#') {
-                    int s = std::stoi(token.substr(1));
-                    if (s <= 0) {
+                    unsigned long long s = std::stoul(token.substr(1));
+                    if (s < 0) {
                         throwException("invalid simulation time");
                     } else {
                         currentTime = s;
@@ -302,6 +371,16 @@ void VcdParser::VcdParse::parse() {
 
                 } else if (c == 'r' || c == 'R') {
                     throwException("real_number is not supported in vector_value_change");
+                } else if (token == "$comment") {
+                    state = InComment2;
+                } else if (token == "$dumpall") {
+                    state = InDumpall;
+                } else if (token == "$dumpoff") {
+                    state = InDumpoff;
+                } else if (token == "$dumpon") {
+                    state = InDumpon;
+                } else if (token == "$dumpvars") {
+                    state = InDumpvars;
                 } else {
                     // scalar_value_change
                     bool i = parseScalarValueChange(token);
@@ -323,46 +402,50 @@ void VcdParser::VcdParse::parse() {
             default:
                 return;
         }
+        token = tokenizer.getNextToken();
     }
 }
 
-bool VcdParser::VcdParse::parseScalarValueChange(const std::string &definition) {
+bool VcdParser::VcdParser::parseScalarValueChange(const std::string &definition) {
     if (definition.length() <= 1) {
         return false;
     }
-    VcdSignal *var = varIdentifierMap[definition.substr(1)];
-    if (!var) {
+    std::string identifier = definition.substr(1);
+    auto mapIt = varIdentifierMap.find(identifier);
+    if (mapIt == varIdentifierMap.end()) {
         return false;
     }
+    Variable *var = varIdentifierMap[identifier];
     char value = definition[0];
     if (!checkVariableValue(value)) {
         return false;
     }
-    var->signals[0].data.push_back({currentTime, value});
+    var->signals[0].values.push_back({currentTime, value});
 
-    return false;
+    return true;
 }
 
-bool VcdParser::VcdParse::parseVectorValueChange(const std::string &identifier, const std::string &value) {
-    VcdSignal *var = varIdentifierMap[identifier];
-    if (!var) {
+bool VcdParser::VcdParser::parseVectorValueChange(const std::string &identifier, const std::string &value) {
+    auto mapIt = varIdentifierMap.find(identifier);
+    if (mapIt == varIdentifierMap.end()) {
         return false;
     }
+    Variable *var = varIdentifierMap[identifier];
     uint64_t varSize = var->signals.size();
     if (value.length() != varSize) {
         return false;
     }
     auto valueIt = value.begin();
-    for (auto it : var->signals) {
+    for (auto &it : var->signals) {
         char v = *valueIt;
         if (!checkVariableValue(v)) {
             return false;
         }
-        it.data.push_back({currentTime, v});
+        it.values.push_back({currentTime, v});
     }
-    return false;
+    return true;
 }
 
-void VcdParser::VcdParse::throwException(const std::string &msg) {
+void VcdParser::VcdParser::throwException(const std::string &msg) {
     throw VcdException(msg, tokenizer.getLine(), tokenizer.getColumn());
 }
