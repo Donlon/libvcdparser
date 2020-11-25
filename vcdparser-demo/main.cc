@@ -62,6 +62,7 @@ int main(int argc, char **argv) {
     std::cout << "Version: " << result.version << std::endl;
     std::cout << "Timescale: " << result.timescale.timeNumber
               << getTimeUnitString(result.timescale.timeUnit) << std::endl;
+    std::cout << "Last variable change time: " << result.lastVariableChangeTime << std::endl;
 
     for (auto it : result.variableList) {
         std::cout << "Variable:" << std::endl;

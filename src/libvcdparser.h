@@ -73,6 +73,7 @@ namespace VcdFormat {
         std::string date;
         std::string version;
         VcdFormat::Timescale timescale;
+        uint64_t lastVariableChangeTime = 0;
         //can add more filed if necessary
 
         std::vector<Variable *> variableList;

@@ -404,6 +404,7 @@ void VcdParser::VcdParser::parse() {
         }
         token = tokenizer.getNextToken();
     }
+    vcdFile.lastVariableChangeTime = currentTime;
 }
 
 bool VcdParser::VcdParser::parseScalarValueChange(const std::string &definition) {
