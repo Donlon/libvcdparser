@@ -93,7 +93,7 @@ namespace VcdParser {
         size_t line = 0;
         size_t column = 0;
 
-        VcdException(std::string msg, int line, int column)
+        VcdException(std::string msg, size_t line, size_t column)
                 : msg(std::move(msg)), line(line), column(column) {
         };
     };

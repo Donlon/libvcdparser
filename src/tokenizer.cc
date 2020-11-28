@@ -26,6 +26,8 @@ std::string VcdParser::Tokenizer::getNextToken() {
         }
         break;
     }
+    lastColumn = column;
+    lastLine = line;
     const char *tokenStart = p;
     while (p < end) {
         switch (*p) {
@@ -38,7 +40,7 @@ std::string VcdParser::Tokenizer::getNextToken() {
             case '\0': {
                 const char *tokenEnd = p;
                 if (*p != '\n') {
-                    column++;
+                    column += 1;
                 }
                 p++;
                 return std::string(tokenStart, tokenEnd);

@@ -448,5 +448,5 @@ bool VcdParser::VcdParser::parseVectorValueChange(const std::string &identifier,
 }
 
 void VcdParser::VcdParser::throwException(const std::string &msg) {
-    throw VcdException(msg, tokenizer.getLine(), tokenizer.getColumn());
+    throw VcdException(msg, tokenizer.getLastLine(), tokenizer.getLastColumn());
 }

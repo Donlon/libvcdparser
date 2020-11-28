@@ -11,21 +11,29 @@ namespace VcdParser {
         const char *end;
         const char *p;
 
-        size_t line = 0;
+        size_t line = 1;
         size_t column = 0;
+        size_t lastLine = 1;
+        size_t lastColumn = 0;
     public:
         explicit Tokenizer(const char *data, size_t len);
 
         std::string getNextToken();
 
-        [[nodiscard]]
         inline size_t getLine() const {
             return line;
         }
 
-        [[nodiscard]]
         inline size_t getColumn() const {
             return column;
+        }
+
+        inline size_t getLastLine() const {
+            return lastLine;
+        }
+
+        inline size_t getLastColumn() const {
+            return lastColumn;
         }
     };
 }
