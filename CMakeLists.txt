@@ -5,7 +5,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_library(libvcdparser
         src/libvcdparser.cc
-        src/tokenizer.cc)
+        src/tokenizer.cc
+        src/utils.cc)
 
 add_executable(vcdparser-demo
         vcdparser-demo/main.cc)

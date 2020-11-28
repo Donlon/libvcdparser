@@ -118,10 +118,12 @@ namespace VcdParser {
         };
 
     private:
-        bool parseScalarValueChange(const std::string &definition);
+        void parseScalarValueChange(const std::string &definition);
 
-        bool parseVectorValueChange(const std::string &identifier,
+        void parseVectorValueChange(const std::string &identifier,
                                     const std::string &value);
+
+        void throwException(const char *fmt, ...);
 
         void throwException(const std::string &msg);
     };

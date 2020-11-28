@@ -1,5 +1,7 @@
 #include "libvcdparser.h"
+#include "utils.h"
 
+#include <cstdarg>
 #include <iostream>
 #include <map>
 
@@ -221,7 +223,7 @@ void VcdParser::VcdParser::parse() {
                 } else if (token == "$version") {
                     state = InVersion;
                 } else {
-                    throwException(std::string("Unknown token ") + token);
+                    throwException("Unknown token '%s'", token.c_str());
                 }
                 break;
 
@@ -364,7 +366,7 @@ void VcdParser::VcdParser::parse() {
                 } else if (c == '#') {
                     unsigned long long s = std::stoul(token.substr(1));
                     if (s < 0) {
-                        throwException("invalid simulation time");
+                        throwException("invalid simulation time '%s'", token.substr(1).c_str());
                     } else {
                         currentTime = s;
                     }
@@ -383,19 +385,13 @@ void VcdParser::VcdParser::parse() {
                     state = InDumpvars;
                 } else {
                     // scalar_value_change
-                    bool i = parseScalarValueChange(token);
-                    if (!i) {
-                        throwException("invalid scalar value change definition");
-                    }
+                    parseScalarValueChange(token);
                 }
                 break;
             }
 
             case InVectorValueChange: {
-                bool i = parseVectorValueChange(token, vectorValueChangeValue);
-                if (!i) {
-                    throwException("invalid vector value change definition");
-                }
+                parseVectorValueChange(token, vectorValueChangeValue);
                 state = InSimulationCmds;
                 break;
             }
@@ -407,44 +403,49 @@ void VcdParser::VcdParser::parse() {
     vcdFile.lastVariableChangeTime = currentTime;
 }
 
-bool VcdParser::VcdParser::parseScalarValueChange(const std::string &definition) {
+void VcdParser::VcdParser::parseScalarValueChange(const std::string &definition) {
     if (definition.length() <= 1) {
-        return false;
+        throwException("invalid scalar value change definition");
     }
     std::string identifier = definition.substr(1);
     auto mapIt = varIdentifierMap.find(identifier);
     if (mapIt == varIdentifierMap.end()) {
-        return false;
+        throwException("invalid scalar value change definition: identifier '%s' is not defined", identifier.c_str());
     }
     Variable *var = varIdentifierMap[identifier];
     char value = definition[0];
     if (!checkVariableValue(value)) {
-        return false;
+        throwException("invalid scalar value change definition: value %c is invalid", value);
     }
     var->signals[0].values.push_back({currentTime, value});
-
-    return true;
 }
 
-bool VcdParser::VcdParser::parseVectorValueChange(const std::string &identifier, const std::string &value) {
+void VcdParser::VcdParser::parseVectorValueChange(const std::string &identifier, const std::string &value) {
     auto mapIt = varIdentifierMap.find(identifier);
     if (mapIt == varIdentifierMap.end()) {
-        return false;
+        throwException("invalid vector value change definition: identifier '%s' is not defined", identifier.c_str());
     }
     Variable *var = varIdentifierMap[identifier];
     uint64_t varSize = var->signals.size();
     if (value.length() != varSize) {
-        return false;
+        throwException("invalid vector value change definition: unexpected value size %d", value.length());
     }
     auto valueIt = value.begin();
     for (auto &it : var->signals) {
         char v = *valueIt;
         if (!checkVariableValue(v)) {
-            return false;
+            throwException("invalid vector value change definition: value %c is invalid", v);
         }
         it.values.push_back({currentTime, v});
     }
-    return true;
+}
+
+void VcdParser::VcdParser::throwException(const char *fmt, ...) {
+    va_list va;
+    va_start(va, fmt);
+    std::string msg = Utils::formatString(fmt, va);
+    throw VcdException(msg, tokenizer.getLastLine(), tokenizer.getLastColumn());
+    va_end(va);
 }
 
 void VcdParser::VcdParser::throwException(const std::string &msg) {
