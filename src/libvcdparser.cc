@@ -413,6 +413,9 @@ void VcdParser::VcdParser::parseScalarValueChange(const std::string &definition)
         throwException("invalid scalar value change definition: identifier '%s' is not defined", identifier.c_str());
     }
     Variable *var = varIdentifierMap[identifier];
+    if (var->signals.size() != 1) {
+        throwException("invalid scalar value change definition: variable '%s' is not a scalar", identifier.c_str());
+    }
     char value = definition[0];
     if (!checkVariableValue(value)) {
         throwException("invalid scalar value change definition: value %c is invalid", value);
