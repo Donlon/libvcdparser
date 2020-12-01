@@ -65,7 +65,7 @@ namespace VcdParser {
     };
 
     struct Var {
-        VarType type = Unknown; // var_type
+        VarType type = Wire; // var_type
         int size = 0;
         std::string identifier; // identifier_code
         std::string name; // reference
@@ -143,7 +143,7 @@ namespace VcdParser {
 
     struct Timescale {
         int timeNumber = 0;
-        VcdFormat::TimeUnit timeUnit = VcdFormat::TimeUnit::Unknown;
+        VcdFormat::TimeUnit timeUnit = VcdFormat::TimeUnit::unit_fs;
         TimescaleParseState state = TimescaleParseState::WaitTimeNumber;
 
         bool setTimeNumber(const std::string &str) {

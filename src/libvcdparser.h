@@ -10,7 +10,6 @@
 
 namespace VcdFormat {
     enum class TimeUnit {
-        Unknown,
         unit_s,
         unit_ms,
         unit_us,
@@ -30,8 +29,6 @@ namespace VcdFormat {
     // };
 
     enum VarType {
-        Unknown,
-
         Event,
         Integer,
         Parameter,
