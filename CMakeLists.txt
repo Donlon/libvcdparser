@@ -3,7 +3,7 @@ project(libvcdparse)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_library(libvcdparser
+add_library(vcdparser
         src/libvcdparser.cc
         src/tokenizer.cc
         src/utils.cc)
@@ -13,4 +13,4 @@ add_executable(vcdparser-demo
 
 target_include_directories(vcdparser-demo PRIVATE src/)
 
-target_link_libraries(vcdparser-demo libvcdparser)
+target_link_libraries(vcdparser-demo vcdparser)

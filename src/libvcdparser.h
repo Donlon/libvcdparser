@@ -11,12 +11,12 @@
 namespace VcdFormat {
     enum class TimeUnit {
         Unknown,
-        s,
-        ms,
-        us,
-        ns,
-        ps,
-        fs
+        unit_s,
+        unit_ms,
+        unit_us,
+        unit_ns,
+        unit_ps,
+        unit_fs
     };
 
     struct Timescale {
@@ -66,7 +66,7 @@ namespace VcdFormat {
     struct Variable {
         std::string name;
         std::string identifier;
-        std::vector<SignalRecord> signals;
+        std::vector<SignalRecord> signalLists;
     };
 
     struct VcdFile {

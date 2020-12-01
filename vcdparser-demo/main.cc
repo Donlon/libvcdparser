@@ -5,17 +5,17 @@
 
 const char *getTimeUnitString(VcdFormat::TimeUnit unit) {
     switch (unit) {
-        case VcdFormat::TimeUnit::s:
+        case VcdFormat::TimeUnit::unit_s:
             return "s";
-        case VcdFormat::TimeUnit::ms:
+        case VcdFormat::TimeUnit::unit_ms:
             return "ms";
-        case VcdFormat::TimeUnit::us:
+        case VcdFormat::TimeUnit::unit_us:
             return "us";
-        case VcdFormat::TimeUnit::ns:
+        case VcdFormat::TimeUnit::unit_ns:
             return "ns";
-        case VcdFormat::TimeUnit::ps:
+        case VcdFormat::TimeUnit::unit_ps:
             return "ps";
-        case VcdFormat::TimeUnit::fs:
+        case VcdFormat::TimeUnit::unit_fs:
             return "fs";
         default:
             return "(Unknown unit)";
@@ -68,8 +68,8 @@ int main(int argc, char **argv) {
         std::cout << "Variable:" << std::endl;
         std::cout << "  name: " << it->name << std::endl;
         std::cout << "  identifier: " << it->identifier << std::endl;
-        std::cout << "  bus width: " << it->signals.size() << std::endl;
-        for (const auto &it2 : it->signals) {
+        std::cout << "  bus width: " << it->signalLists.size() << std::endl;
+        for (const auto &it2 : it->signalLists) {
             std::cout << "    signal[" << it2.index << "]: data size=" << it2.values.size() << std::endl;
         }
     }

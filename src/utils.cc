@@ -3,7 +3,7 @@
 #include <cstdarg>
 #include <stdexcept>
 
-std::string VcdParser::Utils::formatString(const char* fmt, va_list va) {
+std::string VcdParser::Utils::formatString(const char *fmt, va_list va) {
     va_list va2;
     va_copy(va2, va);
     size_t size = vsnprintf(nullptr, 0, fmt, va) + 1;

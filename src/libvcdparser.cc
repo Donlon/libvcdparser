@@ -160,17 +160,17 @@ namespace VcdParser {
 
         bool setTimeUnit(const std::string &str) {
             if (str == "s") {
-                timeUnit = VcdFormat::TimeUnit::s;
+                timeUnit = VcdFormat::TimeUnit::unit_s;
             } else if (str == "ms") {
-                timeUnit = VcdFormat::TimeUnit::ms;
+                timeUnit = VcdFormat::TimeUnit::unit_ms;
             } else if (str == "us") {
-                timeUnit = VcdFormat::TimeUnit::us;
+                timeUnit = VcdFormat::TimeUnit::unit_us;
             } else if (str == "ns") {
-                timeUnit = VcdFormat::TimeUnit::ns;
+                timeUnit = VcdFormat::TimeUnit::unit_ns;
             } else if (str == "ps") {
-                timeUnit = VcdFormat::TimeUnit::ps;
+                timeUnit = VcdFormat::TimeUnit::unit_ps;
             } else if (str == "fs") {
-                timeUnit = VcdFormat::TimeUnit::fs;
+                timeUnit = VcdFormat::TimeUnit::unit_fs;
             } else {
                 return false;
             }
@@ -297,10 +297,10 @@ void VcdParser::VcdParser::parse() {
                     state = InDefinitionCmds;
                     // new variable
                     Variable *variable = vcdFile.createVariable(var.name, var.identifier);
-                    std::vector<SignalRecord> &signals = variable->signals;
-                    signals.resize(var.size);
+                    std::vector<SignalRecord> &signalLists = variable->signalLists;
+                    signalLists.resize(var.size);
                     int i = 0;
-                    for (auto &it : signals) {
+                    for (auto &it : signalLists) {
                         it.index = i;
                         i++;
                     }
@@ -413,14 +413,14 @@ void VcdParser::VcdParser::parseScalarValueChange(const std::string &definition)
         throwException("invalid scalar value change definition: identifier '%s' is not defined", identifier.c_str());
     }
     Variable *var = varIdentifierMap[identifier];
-    if (var->signals.size() != 1) {
+    if (var->signalLists.size() != 1) {
         throwException("invalid scalar value change definition: variable '%s' is not a scalar", identifier.c_str());
     }
     char value = definition[0];
     if (!checkVariableValue(value)) {
         throwException("invalid scalar value change definition: value %c is invalid", value);
     }
-    var->signals[0].values.push_back({currentTime, value});
+    var->signalLists[0].values.push_back({currentTime, value});
 }
 
 void VcdParser::VcdParser::parseVectorValueChange(const std::string &identifier, const std::string &value) {
@@ -429,12 +429,12 @@ void VcdParser::VcdParser::parseVectorValueChange(const std::string &identifier,
         throwException("invalid vector value change definition: identifier '%s' is not defined", identifier.c_str());
     }
     Variable *var = varIdentifierMap[identifier];
-    uint64_t varSize = var->signals.size();
+    uint64_t varSize = var->signalLists.size();
     if (value.length() != varSize) {
         throwException("invalid vector value change definition: unexpected value size %d", value.length());
     }
     auto valueIt = value.begin();
-    for (auto &it : var->signals) {
+    for (auto &it : var->signalLists) {
         char v = *valueIt;
         if (!checkVariableValue(v)) {
             throwException("invalid vector value change definition: value %c is invalid", v);
