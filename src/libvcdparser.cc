@@ -458,6 +458,7 @@ void VcdParser::VcdParser::parseVectorValueChange(const std::string &identifier,
             throwException("invalid vector value change definition: value %c is invalid", v);
         }
         it.values.push_back({currentTime, v});
+        valueIt++;
     }
 }
 
