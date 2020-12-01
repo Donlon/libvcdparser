@@ -2,7 +2,6 @@
 #include "utils.h"
 
 #include <cstdarg>
-#include <iostream>
 #include <map>
 
 using namespace VcdFormat;
@@ -53,7 +52,6 @@ namespace VcdParser {
         InDumpoff,
         InDumpon,
         InDumpvars,
-        InComment2,
 
         InVectorValueChange,
     };
@@ -193,6 +191,7 @@ VcdParser::VcdParser::VcdParser(const char *data, size_t len)
 void VcdParser::VcdParser::parse() {
     std::string token;
     ParserStates state = InDefinitionCmds;
+    ParserStates savedState = state;
 
     Var var;
     Timescale timescale;
@@ -205,6 +204,7 @@ void VcdParser::VcdParser::parse() {
         switch (state) {
             case InDefinitionCmds:
                 if (token == "$comment") {
+                    savedState = state;
                     state = InComment;
                 } else if (token == "$date") {
                     state = InDate;
@@ -227,19 +227,18 @@ void VcdParser::VcdParser::parse() {
                 }
                 break;
 
-            case InComment:// Not implemented
-            case InScope:
+            case InComment:
+                if (token == "$end") {
+                    state = savedState;
+                }
+                break;
+
+            case InScope:// Not implemented
             case InUpscope:
                 if (token == "$end") {
                     state = InDefinitionCmds;
                 } else {
                     // pass
-                }
-                break;
-
-            case InComment2:
-                if (token == "$end") {
-                    state = InSimulationCmds;
                 }
                 break;
 
@@ -377,20 +376,25 @@ void VcdParser::VcdParser::parse() {
 
                     case '$':
                         if (token == "$comment") {
-                            state = InComment2;
+                            savedState = state;
+                            state = InComment;
                         } else if (token == "$dumpall") {
+                            savedState = state;
                             state = InDumpall;
                         } else if (token == "$dumpoff") {
+                            savedState = state;
                             state = InDumpoff;
                         } else if (token == "$dumpon") {
+                            savedState = state;
                             state = InDumpon;
                         } else if (token == "$dumpvars") {
+                            savedState = state;
                             state = InDumpvars;
                         } else if (token == "$end") {
                             if (state == InSimulationCmds) {
                                 throwException("unexpected token $end");
                             } else {
-                                state = InSimulationCmds;
+                                state = savedState;
                             }
                         } else {
                             throwException("unknown token '%s'", token.c_str());
@@ -405,7 +409,8 @@ void VcdParser::VcdParser::parse() {
 
             case InVectorValueChange: {
                 parseVectorValueChange(token, vectorValueChangeValue);
-                state = InSimulationCmds;
+                state = savedState;
+                savedState = InSimulationCmds;
                 break;
             }
             default:
