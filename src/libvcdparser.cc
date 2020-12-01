@@ -237,17 +237,6 @@ void VcdParser::VcdParser::parse() {
                 }
                 break;
 
-            case InDumpall:// Not implemented
-            case InDumpoff:
-            case InDumpon:
-            case InDumpvars:
-                if (token == "$end") {
-                    state = InSimulationCmds;
-                } else {
-                    // pass
-                }
-                break;
-
             case InComment2:
                 if (token == "$end") {
                     state = InSimulationCmds;
@@ -357,35 +346,59 @@ void VcdParser::VcdParser::parse() {
                 }
                 break;
 
+            case InDumpall:// Not implemented
+            case InDumpoff:
+            case InDumpon:
+            case InDumpvars:
             case InSimulationCmds: {
-                char c = token[0];
-                if (c == 'b' || c == 'B') {
-                    // vector_value_change
-                    vectorValueChangeValue = token.substr(1);
-                    state = InVectorValueChange;
-                } else if (c == '#') {
-                    unsigned long long s = std::stoul(token.substr(1));
-                    if (s < 0) {
-                        throwException("invalid simulation time '%s'", token.substr(1).c_str());
-                    } else {
-                        currentTime = s;
+                switch (token[0]) {
+                    case 'b':
+                    case 'B':
+                        // vector_value_change
+                        vectorValueChangeValue = token.substr(1);
+                        state = InVectorValueChange;
+                        break;
+
+                    case 'r':
+                    case 'R':
+                        throwException("real_number is not supported in vector_value_change");
+                        break;
+
+                    case '#': {
+                        auto timeStr = token.substr(1);
+                        unsigned long long s = std::stoul(timeStr);
+                        if (s < 0) {
+                            throwException("invalid simulation time '%s'", timeStr.c_str());
+                        } else {
+                            currentTime = s;
+                        }
+                        break;
                     }
 
-                } else if (c == 'r' || c == 'R') {
-                    throwException("real_number is not supported in vector_value_change");
-                } else if (token == "$comment") {
-                    state = InComment2;
-                } else if (token == "$dumpall") {
-                    state = InDumpall;
-                } else if (token == "$dumpoff") {
-                    state = InDumpoff;
-                } else if (token == "$dumpon") {
-                    state = InDumpon;
-                } else if (token == "$dumpvars") {
-                    state = InDumpvars;
-                } else {
-                    // scalar_value_change
-                    parseScalarValueChange(token);
+                    case '$':
+                        if (token == "$comment") {
+                            state = InComment2;
+                        } else if (token == "$dumpall") {
+                            state = InDumpall;
+                        } else if (token == "$dumpoff") {
+                            state = InDumpoff;
+                        } else if (token == "$dumpon") {
+                            state = InDumpon;
+                        } else if (token == "$dumpvars") {
+                            state = InDumpvars;
+                        } else if (token == "$end") {
+                            if (state == InSimulationCmds) {
+                                throwException("unexpected token $end");
+                            } else {
+                                state = InSimulationCmds;
+                            }
+                        } else {
+                            throwException("unknown token '%s'", token.c_str());
+                        }
+                        break;
+
+                    default:
+                        parseScalarValueChange(token);
                 }
                 break;
             }
