@@ -342,6 +342,7 @@ void VcdParser::VcdParser::parse() {
                 if (token == "$end") {
                     // eNd dEfInItIoNs
                     state = InSimulationCmds;
+                    savedState = state;
                 }
                 break;
 
@@ -376,25 +377,26 @@ void VcdParser::VcdParser::parse() {
 
                     case '$':
                         if (token == "$comment") {
-                            savedState = state;
+                            savedState = state; // InSimulationCmds
                             state = InComment;
                         } else if (token == "$dumpall") {
-                            savedState = state;
                             state = InDumpall;
+                            savedState = state; // InDumpall
                         } else if (token == "$dumpoff") {
-                            savedState = state;
                             state = InDumpoff;
+                            savedState = state; // InDumpoff
                         } else if (token == "$dumpon") {
-                            savedState = state;
                             state = InDumpon;
+                            savedState = state; // InDumpon
                         } else if (token == "$dumpvars") {
-                            savedState = state;
                             state = InDumpvars;
+                            savedState = state; // InDumpvars
                         } else if (token == "$end") {
                             if (state == InSimulationCmds) {
                                 throwException("unexpected token $end");
                             } else {
-                                state = savedState;
+                                state = InSimulationCmds;
+                                savedState = state; // InSimulationCmds
                             }
                         } else {
                             throwException("unknown token '%s'", token.c_str());
@@ -410,7 +412,6 @@ void VcdParser::VcdParser::parse() {
             case InVectorValueChange: {
                 parseVectorValueChange(token, vectorValueChangeValue);
                 state = savedState;
-                savedState = InSimulationCmds;
                 break;
             }
             default:
