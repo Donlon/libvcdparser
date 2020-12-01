@@ -346,7 +346,7 @@ void VcdParser::VcdParser::parse() {
                 }
                 break;
 
-            case InDumpall:// Not implemented
+            case InDumpall:
             case InDumpoff:
             case InDumpon:
             case InDumpvars:
@@ -404,6 +404,7 @@ void VcdParser::VcdParser::parse() {
                         break;
 
                     default:
+                        // scalar_value_change
                         parseScalarValueChange(token);
                 }
                 break;
@@ -466,8 +467,7 @@ void VcdParser::VcdParser::parseVectorValueChange(const std::string &identifier,
 void VcdParser::VcdParser::throwException(const char *fmt, ...) {
     va_list va;
     va_start(va, fmt);
-    std::string msg = Utils::formatString(fmt, va);
-    throw VcdException(msg, tokenizer.getLastLine(), tokenizer.getLastColumn());
+    throwException(Utils::formatString(fmt, va));
     va_end(va);
 }
 
