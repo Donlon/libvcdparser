@@ -12,6 +12,6 @@ std::string VcdParser::Utils::formatString(const char *fmt, va_list va) {
     }
     std::string str;
     str.resize(size);
-    vsnprintf(str.data(), size, fmt, va2);
+    vsnprintf(const_cast<char *>(str.data()), size, fmt, va2);
     return str;
 }
