@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 #include "tokenizer.h"
 
 VcdParser::Tokenizer::Tokenizer(const char *data, size_t len)
