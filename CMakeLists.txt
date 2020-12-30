@@ -10,9 +10,4 @@ add_library(vcdparser
         src/tokenizer.cc
         src/utils.cc)
 
-add_executable(vcdparser-demo
-        vcdparser-demo/main.cc)
-
-target_include_directories(vcdparser-demo PRIVATE src/)
-
-target_link_libraries(vcdparser-demo vcdparser)
+add_subdirectory(vcdparser-demo)
